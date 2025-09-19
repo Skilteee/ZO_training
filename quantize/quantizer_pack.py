@@ -179,7 +179,7 @@ class UniformAffineQuantizer(nn.Module):
 
         self.per_token_dynamic_calibration(x)
         self.orig_shape = x.shape
-        assert x.dim() == 2, "only support linear layer now"  # 与你的断言一致
+        assert x.dim() == 2, "only support linear layer now" 
         dim1, dim2 = x.shape
 
         if deficiency > 0:
@@ -218,31 +218,31 @@ class UniformAffineQuantizer(nn.Module):
 
         xq = x.to(torch.int16).to(torch.float16)
 
-        # 2) 如果有分组量化，先按分组形状展开，便于按组广播 scale/zp
+        
         if group_size:
-            xq = xq.reshape(-1, group_size)  # 与量化时的 reshape 对应
+            xq = xq.reshape(-1, group_size)  
 
         s = self.scale
         if s.dim() == 1 and group_size is not None and s.numel() == xq.numel() // group_size:
-            s = s.view(-1, 1)  # 每组一个 scale
-        # 若 s 已与 xq 可广播，就不用改
+            s = s.view(-1, 1)  
+       
 
         z = self.round_zero_point
         if isinstance(z,
                       torch.Tensor) and z.dim() == 1 and group_size is not None and z.numel() == xq.numel() // group_size:
-            z = z.view(-1, 1)  # 每组一个 zp
+            z = z.view(-1, 1)  
         xq = xq - z
 
-        # 4) 线性反量化
+       
         x_fp = xq * s
 
-        # 5) 还原矩阵形状，并去掉当时为了对齐 group_size 补的列
+       
         if group_size:
             x_fp = x_fp.reshape(self.orig_shape[0], -1)
         if deficiency > 0:
             x_fp = x_fp[:, :self.orig_shape[1]]
 
-        # 6) 转回你想要的浮点精度（例如 fp16/fp32）
+        
         return x_fp.to(dtype)
 
 
@@ -295,7 +295,6 @@ class UniformAffineQuantizer(nn.Module):
             self.scale = scale.clamp(min=CLIPMIN, max=1e4)
             zero_point = -(xmin) / (self.scale)
 
-        # 把self.scale变成一个parameter
         self.scale = torch.nn.parameter.Parameter(self.scale, requires_grad=False)
         if self.disable_zero_point:
             self.round_zero_point = None
